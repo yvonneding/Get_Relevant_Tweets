@@ -5,7 +5,7 @@ class Constants:
   min_followers = 10000
   min_posts_per_topic = 50 # for qualitative analysis, for linguistic feature analysis, for our meeting discussion
   min_posts_per_topic_for_causal_inference = 500 # for do-calculus, propensity score matching
-
+  users_meta_info = 'users_meta_info.jsonl'
   csv_list_of_key_topics = 'topics.csv'  # 10-50 inspired from Joe Biden / Obama /
   # GovWhitmer (Michigan, Penn, Georgia, Wisconsin, 摇摆州)
 
