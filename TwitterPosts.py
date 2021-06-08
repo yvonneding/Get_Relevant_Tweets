@@ -1,6 +1,6 @@
 class Constants:
   url_twitter_follower = 'https://www.trackalytics.com/the-most-followed-twitter-profiles/page/{page_id}/'
-  url_twitter_follower_max_page = 5
+  url_twitter_follower_max_page = 450
   # page ranges from 1~654, but people on the page after 450 don't have 10000 followers
   min_followers = 10000
   min_posts_per_topic = 50 # for qualitative analysis, for linguistic feature analysis, for our meeting discussion
@@ -35,16 +35,16 @@ class TwitterPosts:
 
       # TODO: you can save this as a jsonl file
       # command: watch ls -l file_name
-    relevant_tweets = {} # a dict with key=topic and value=list(relevant_tweet)
-    for topic in self.key_topics:
-      relevant_tweets[topic] = []
-      for tweet in self.user_tweets:
-        for each_phrase in topic:
-          if each_phrase in tweet:
-            relevant_tweets[topic].append(tweet)
-            break
-      if len(relevant_tweets[topic]) < C.min_posts_per_topic:
-        print("The topic {} has less than 50 posts".format(topic))
+    # relevant_tweets = {} # a dict with key=topic and value=list(relevant_tweet)
+    # for topic in self.key_topics:
+    #   relevant_tweets[topic] = []
+    #   for tweet in self.user_tweets:
+    #     for each_phrase in topic:
+    #       if each_phrase.lower() in tweet.lower():
+    #         relevant_tweets[topic].append(tweet)
+    #         break
+    #   if len(relevant_tweets[topic]) < C.min_posts_per_topic:
+    #     print("The topic {} has less than 50 posts".format(topic))
 
   def get_all_tweets_by_id(self, twitter_name):
     # save jsonl
@@ -70,8 +70,11 @@ class TwitterPosts:
     api = tweepy.API(auth)
 
     all_tweets = []
-    tweets = api.user_timeline(screen_name=twitter_name, count=200)
-    all_tweets.extend(tweets)
+    try: 
+      tweets = api.user_timeline(screen_name=twitter_name, count=200)
+      all_tweets.extend(tweets)
+    except:
+      return
 
     oldest = all_tweets[-1].id - 1
 
@@ -81,17 +84,22 @@ class TwitterPosts:
       oldest = all_tweets[-1].id - 1
 
     for tweet in all_tweets: 
-      id = int(tweet.id_str)
-      status = api.get_status(id)
-      num_of_likes = status.favorite_count
-      text = tweet.text.encode("utf-8")
-      tweet_info = {"num_of_likes": num_of_likes, "text": text}
+      json_object = tweet._json
+      tweet_info = {"tweet_id": json_object["id"], "created_at": json_object["created_at"], "num_of_likes": json_object["favorite_count"], "retweet_count" : json_object["retweet_count"], "text": json_object["text"], "retweeted_id": "null", "in_reply_to_status_id": json_object["in_reply_to_status_id"]}
+      # if this tweet is a RT
+      if "retweeted_status" in json_object:
+        tweet_info["retweeted_id"] = json_object["retweeted_status"]["id"]
       self.user_tweets.append(tweet_info)
 
-    with open("user_tweet.json", 'a') as jsonl_file:
+    with open(twitter_name + ".jsonl", 'w') as jsonl_file:
       for tweet in self.user_tweets:
         jsonl_file.write(json.dumps(tweet) + '\n')
     
+    with open(C.users_meta_info, 'a') as user_file:
+      user = all_tweets[0]._json["user"]
+      user_info = {"user_name": user["screen_name"], "user_id": user["id"], "name": user["name"], "location": user["location"], "description": user["description"], "follower_count": user["followers_count"], "friends_count": user["friends_count"], "verified": user["verified"]}
+      user_file.write(json.dumps(user_info) + '\n')
+
   def set_twitter_ids(self):
     from bs4 import BeautifulSoup
     import requests
@@ -122,7 +130,7 @@ class TwitterPosts:
 
 def main():
   tp = TwitterPosts()
-  tp.extract_tweets()
+  
 
 
 if __name__ == '__main__':
