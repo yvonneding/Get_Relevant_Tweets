@@ -16,13 +16,13 @@ result.remove('barackobama_example.jsonl')
 #   relevant_tweets[topic[0]] = []
 
 user_dict = {} # key: tweet_if, value: text
-for user_file in tqdm(result):
+for user_file in tqdm(result[:20]):
   with jsonlines.open(user_file) as json_file:
     for line in json_file.iter():
       user_dict[line["tweet_id"]] = line['text']
 
 
-for topic in key_topics:
+for topic in tqdm(key_topics):
   with open(topic[0] + '.csv', 'w') as csv_file:
     fieldnames = ['tweet']
     writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
